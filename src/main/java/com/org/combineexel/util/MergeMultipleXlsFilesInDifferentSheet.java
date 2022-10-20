@@ -6,27 +6,26 @@ import org.apache.poi.xssf.usermodel.*;
 import java.io.*;
 import java.util.*;
 
-public class MergeMultipleXlsFilesInDifferentSheet{
+public class MergeMultipleXlsFilesInDifferentSheet {
     public static void mergeExcelFiles() throws IOException {
 
         XSSFWorkbook outputWorkBook = new XSSFWorkbook();
-        File outputFile = new File("D:\\exel\\3.xlxs");
+        File outputFile = new File("3.xlsx");
 
-        List<String> fileNames = new ArrayList<String>(){
+        List<String> fileNames = new ArrayList<String>() {
             {
-                add("D:\\exel\\1.xlsx");
-                add("D:\\exel\\2.xlsx");
+                add("1.xlsx");
+                add("2.xlsx");
             }
         };
         XSSFSheet sheet = outputWorkBook.createSheet("consolidated sheet");
-        for (String fileName : fileNames){
+        for (String fileName : fileNames) {
             File file = new File(fileName);
-            if (file.isFile()){
+            if (file.isFile()) {
                 FileInputStream fin = new FileInputStream(file);
                 XSSFWorkbook b = new XSSFWorkbook(fin);
                 for (int i = 0; i < b.getNumberOfSheets(); i++) {
-                    for(int worksheetIndex = 0; worksheetIndex<b.getNumberOfSheets(); worksheetIndex++)
-                    {
+                    for (int worksheetIndex = 0; worksheetIndex < b.getNumberOfSheets(); worksheetIndex++) {
                         String worksheetName = b.getSheetName(worksheetIndex);
                         System.out.println("test " + worksheetName);
                         copySheets(sheet, b.getSheetAt(i));
@@ -37,7 +36,7 @@ public class MergeMultipleXlsFilesInDifferentSheet{
         }
         try {
             writeFile(outputWorkBook, outputFile);
-        }catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -45,26 +44,29 @@ public class MergeMultipleXlsFilesInDifferentSheet{
 
     protected static void writeFile(XSSFWorkbook book, File file) throws Exception {
 
-    try{
-        FileOutputStream out = new FileOutputStream(file);
-        book.write(out);
-        out.close();
-        System.out.println(file+ " is written successfully..");
-    } catch (FileNotFoundException e) {
-        e.printStackTrace();
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
-
-
-    private static void copySheets(XSSFSheet newSheet, XSSFSheet sheet){
-
-        copySheets( newSheet, sheet, true);
+        try {
+            FileOutputStream out = new FileOutputStream(file);
+            book.write(out);
+            out.close();
+            System.out.println(file + " is written successfully..");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    private static void copySheets( XSSFSheet newSheet, XSSFSheet sheet, boolean copyStyle){
-        int newRownumber = newSheet.getLastRowNum()  + 1;
+    private static void copySheets(XSSFSheet newSheet, XSSFSheet sheet) {
+
+        copySheets(newSheet, sheet, true);
+    }
+
+    private static void copySheets(XSSFSheet newSheet, XSSFSheet sheet, boolean copyStyle) {
+        int newRownumber = 0;
+
+        if (newSheet.getPhysicalNumberOfRows() != 0) {
+            newRownumber++;
+        }
         int maxColumnNum = 0;
         Map<Integer, XSSFCellStyle> styleMap = (copyStyle) ? new HashMap<Integer, XSSFCellStyle>() : null;
 
@@ -72,7 +74,7 @@ public class MergeMultipleXlsFilesInDifferentSheet{
             XSSFRow srcRow = sheet.getRow(i);
             XSSFRow destRow = newSheet.createRow(i + newRownumber);
             if (srcRow != null) {
-                //copyRow(newWorkbook, sheet, newSheet, srcRow, destRow, styleMap);
+                // copyRow(newWorkbook, sheet, newSheet, srcRow, destRow, styleMap);
                 copyRow(sheet, newSheet, srcRow, destRow, styleMap);
                 if (srcRow.getLastCellNum() > maxColumnNum) {
                     maxColumnNum = srcRow.getLastCellNum();
@@ -84,17 +86,17 @@ public class MergeMultipleXlsFilesInDifferentSheet{
         }
     }
 
-
-    public static void copyRow( XSSFSheet srcSheet, XSSFSheet destSheet, XSSFRow srcRow, XSSFRow destRow, Map<Integer, XSSFCellStyle> styleMap) {
+    public static void copyRow(XSSFSheet srcSheet, XSSFSheet destSheet, XSSFRow srcRow, XSSFRow destRow,
+            Map<Integer, XSSFCellStyle> styleMap) {
         destRow.setHeight(srcRow.getHeight());
         Set<CellRangeAddress> mergedRegions = new TreeSet<CellRangeAddress>();
 
-
-        int deltaRows = destRow.getRowNum()-srcRow.getRowNum();
-
+        int deltaRows = destRow.getRowNum() - srcRow.getRowNum();
 
         int j = srcRow.getFirstCellNum();
-        if(j<0){j=0;}
+        if (j < 0) {
+            j = 0;
+        }
         for (; j <= srcRow.getLastCellNum(); j++) {
 
             XSSFCell oldCell = srcRow.getCell(j);
@@ -104,37 +106,39 @@ public class MergeMultipleXlsFilesInDifferentSheet{
                     newCell = destRow.createCell(j);
                 }
 
-                copyCell( oldCell, newCell, styleMap);CellRangeAddress mergedRegion = getMergedRegion( srcSheet, srcRow.getRowNum(), (short)oldCell.getColumnIndex());
+                copyCell(oldCell, newCell, styleMap);
+                CellRangeAddress mergedRegion = getMergedRegion(srcSheet, srcRow.getRowNum(),
+                        (short) oldCell.getColumnIndex());
                 if (mergedRegion != null) {
 
-                    CellRangeAddress newMergedRegion = new CellRangeAddress(mergedRegion.getFirstRow()+deltaRows, mergedRegion.getLastRow()+deltaRows, mergedRegion.getFirstColumn(),  mergedRegion.getLastColumn());
-                    //System.out.println("New merged region: " + newMergedRegion.toString());
+                    CellRangeAddress newMergedRegion = new CellRangeAddress(mergedRegion.getFirstRow() + deltaRows,
+                            mergedRegion.getLastRow() + deltaRows, mergedRegion.getFirstColumn(),
+                            mergedRegion.getLastColumn());
+                    // System.out.println("New merged region: " + newMergedRegion.toString());
 
-                    if (isNewMergedRegion( newMergedRegion, mergedRegions)) {
+                    if (isNewMergedRegion(newMergedRegion, mergedRegions)) {
                         mergedRegions.add(newMergedRegion);
                         destSheet.addMergedRegion(newMergedRegion);
                     }
                 }
 
-
             }
         }
     }
 
-
-    public static void copyCell( XSSFCell oldCell, XSSFCell newCell, Map<Integer, XSSFCellStyle> styleMap) {
-        if(styleMap != null) {
+    public static void copyCell(XSSFCell oldCell, XSSFCell newCell, Map<Integer, XSSFCellStyle> styleMap) {
+        if (styleMap != null) {
             int stHashCode = oldCell.getCellStyle().hashCode();
             XSSFCellStyle newCellStyle = styleMap.get(stHashCode);
-            if(newCellStyle == null){
-                //newCellStyle = newWorkbook.createCellStyle();
+            if (newCellStyle == null) {
+                // newCellStyle = newWorkbook.createCellStyle();
                 newCellStyle = newCell.getSheet().getWorkbook().createCellStyle();
                 newCellStyle.cloneStyleFrom(oldCell.getCellStyle());
                 styleMap.put(stHashCode, newCellStyle);
             }
             newCell.setCellStyle(newCellStyle);
         }
-        switch(oldCell.getCellType()) {
+        switch (oldCell.getCellType()) {
             case XSSFCell.CELL_TYPE_STRING:
                 newCell.setCellValue(oldCell.getRichStringCellValue());
                 break;
@@ -158,8 +162,7 @@ public class MergeMultipleXlsFilesInDifferentSheet{
         }
     }
 
-
-    public static CellRangeAddress getMergedRegion( XSSFSheet sheet, int rowNum, short cellNum) {
+    public static CellRangeAddress getMergedRegion(XSSFSheet sheet, int rowNum, short cellNum) {
         for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
             CellRangeAddress merged = (CellRangeAddress) sheet.getMergedRegion(i);
             if (merged.isInRange(rowNum, cellNum)) {
@@ -169,13 +172,10 @@ public class MergeMultipleXlsFilesInDifferentSheet{
         return null;
     }
 
-
-
-
-    private static boolean isNewMergedRegion(CellRangeAddress newMergedRegion, Collection<CellRangeAddress> mergedRegions) {
+    private static boolean isNewMergedRegion(CellRangeAddress newMergedRegion,
+            Collection<CellRangeAddress> mergedRegions) {
         return !mergedRegions.contains(newMergedRegion);
     }
-
 
     public static void main(String[] args) {
         try {
