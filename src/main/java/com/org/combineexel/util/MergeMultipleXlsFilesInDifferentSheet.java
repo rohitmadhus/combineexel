@@ -9,29 +9,47 @@ import java.util.*;
 public class MergeMultipleXlsFilesInDifferentSheet {
     public static void mergeExcelFiles() throws IOException {
 
-        XSSFWorkbook outputWorkBook = new XSSFWorkbook();
-        File outputFile = new File("3.xlsx");
+        final String inputDierectoryPath = "input/";
 
-        List<String> fileNames = new ArrayList<String>() {
-            {
-                add("1.xlsx");
-                add("2.xlsx");
+        XSSFWorkbook outputWorkBook = new XSSFWorkbook();
+        File outputFile = new File("output.xlsx");
+        String headerFileName = "header.xlsx";
+        File inputDierectory = new File(inputDierectoryPath);
+
+
+        List<String> fileNames = new ArrayList<String>();
+
+        if (inputDierectory.listFiles() != null) {
+            for (File file : inputDierectory.listFiles()) {
+                String extension = "";
+                int i = file.getName().lastIndexOf('.');
+                if (i > 0) {
+                    extension = file.getName().substring(i + 1);
+                }
+                if (extension.equals("xlsx")) {
+                    if (file.getName().equals(headerFileName))
+                        fileNames.add(0, file.getName());
+                    else
+                        fileNames.add(file.getName());
+                }
             }
-        };
+        }
+
         XSSFSheet sheet = outputWorkBook.createSheet("consolidated sheet");
         for (String fileName : fileNames) {
-            File file = new File(fileName);
+            File file = new File(inputDierectoryPath + fileName);
             if (file.isFile()) {
                 FileInputStream fin = new FileInputStream(file);
                 XSSFWorkbook b = new XSSFWorkbook(fin);
                 for (int i = 0; i < b.getNumberOfSheets(); i++) {
                     for (int worksheetIndex = 0; worksheetIndex < b.getNumberOfSheets(); worksheetIndex++) {
                         String worksheetName = b.getSheetName(worksheetIndex);
-                        System.out.println("test " + worksheetName);
+                        System.out.println("processing :" + worksheetName);
                         copySheets(sheet, b.getSheetAt(i));
                         System.out.println("Copying..");
                     }
                 }
+                b.close();
             }
         }
         try {
@@ -65,7 +83,7 @@ public class MergeMultipleXlsFilesInDifferentSheet {
         int newRownumber = 0;
 
         if (newSheet.getPhysicalNumberOfRows() != 0) {
-            newRownumber++;
+            newRownumber = newSheet.getLastRowNum() + 1;
         }
         int maxColumnNum = 0;
         Map<Integer, XSSFCellStyle> styleMap = (copyStyle) ? new HashMap<Integer, XSSFCellStyle>() : null;
